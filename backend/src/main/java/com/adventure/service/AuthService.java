@@ -4,7 +4,6 @@ import com.adventure.model.Player;
 import com.adventure.repository.PlayerRepository;
 import com.adventure.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,36 +14,26 @@ import java.util.Map;
 public class AuthService {
 
     private final PlayerRepository playerRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public Map<String, Object> register(String username, String email, String password) {
-        if (playerRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Username already taken");
-        }
-        if (playerRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email already registered");
-        }
-
+    public Map<String, Object> register(String username) {
         Player player = new Player();
-        player.setUsername(username);
-        player.setEmail(email);
-        player.setPassword(passwordEncoder.encode(password));
+        player.setName(username);
         Player saved = playerRepository.save(player);
 
-        String token = jwtUtil.generateToken(saved.getId(), saved.getUsername());
+        String token = jwtUtil.generateToken(saved.getId(), saved.getName());
         return buildAuthResponse(saved, token);
     }
 
-    public Map<String, Object> login(String username, String password) {
+    public Map<String, Object> login(String username) {
         Player player = playerRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseGet(() -> {
+                    Player p = new Player();
+                    p.setName(username);
+                    return playerRepository.save(p);
+                });
 
-        if (!passwordEncoder.matches(password, player.getPassword())) {
-            throw new IllegalArgumentException("Invalid credentials");
-        }
-
-        String token = jwtUtil.generateToken(player.getId(), player.getUsername());
+        String token = jwtUtil.generateToken(player.getId(), player.getName());
         return buildAuthResponse(player, token);
     }
 

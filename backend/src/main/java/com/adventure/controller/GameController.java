@@ -1,35 +1,34 @@
 package com.adventure.controller;
 
-import com.adventure.model.Player;
 import com.adventure.service.GameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/game")
 @RequiredArgsConstructor
 public class GameController {
 
     private final GameService gameService;
 
     @GetMapping("/scene")
-    public ResponseEntity<?> getCurrentScene(@AuthenticationPrincipal Player player) {
+    public ResponseEntity<?> getCurrentScene(@RequestParam(defaultValue "0") Long playerId) {
         try {
-            return ResponseEntity.ok(gameService.getCurrentScene(player.getId()));
+            return ResponseEntity.ok(gameService.getCurrentScene(playerId));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 
     @PostMapping("/choose")
-    public ResponseEntity<?> makeChoice(@AuthenticationPrincipal Player player,
-                                         @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> makeChoice(@RequestBody Map<String, String> body) {
         try {
-            return ResponseEntity.ok(gameService.makeChoice(player.getId(), body.get("choiceId")));
+            return ResponseEntity.ok(gameService.makeChoice(
+                    body.getOrDefault("playerId", "0"),
+                    body.get("choiceId")
+            ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (IllegalStateException e) {
@@ -38,17 +37,29 @@ public class GameController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetGame(@AuthenticationPrincipal Player player) {
-        return ResponseEntity.ok(gameService.resetGame(player.getId()));
+    public ResponseEntity<?> resetGame(@RequestParam(defaultValue = "0") Long playerId) {
+        try {
+            return ResponseEntity.ok(gameService.resetGame(playerId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/player")
-    public ResponseEntity<?> getPlayerInfo(@AuthenticationPrincipal Player player) {
-        return ResponseEntity.ok(player);
+    public ResponseEntity<?> getPlayerInfo(@RequestParam(defaultValue = "0") Long playerId) {
+        try {
+            return ResponseEntity.ok(gameService.getPlayerInfo(playerId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/leaderboard")
     public ResponseEntity<?> getLeaderboard() {
-        return ResponseEntity.ok(gameService.getLeaderboard());
+        try {
+            return ResponseEntity.ok(gameService.getLeaderboard());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 }
