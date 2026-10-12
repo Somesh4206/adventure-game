@@ -1,26 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: adventure-postgres
-    environment:
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: adventuredb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - adventure-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Spring Boot Backend
   backend:
     build:
@@ -28,17 +8,10 @@ services:
       dockerfile: Dockerfile
     container_name: adventure-backend
     environment:
-      DATABASE_URL: jdbc:postgresql://postgres:5432/adventuredb
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-YourSuperSecretJWTKeyThatShouldBeAtLeast256BitsLongForHMACSHA256Algorithm}
       CORS_ALLOWED_ORIGINS: ${FRONTEND_URL:-http://localhost:3000}
       SERVER_PORT: 8080
     ports:
       - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - adventure-network
     restart: unless-stopped
@@ -58,10 +31,6 @@ services:
     networks:
       - adventure-network
     restart: unless-stopped
-
-volumes:
-  postgres_data:
-    driver: local
 
 networks:
   adventure-network:

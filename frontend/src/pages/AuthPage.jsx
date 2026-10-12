@@ -6,8 +6,7 @@ import AmbientBackground from '../components/AmbientBackground';
 import './AuthPage.css';
 
 export default function AuthPage() {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -15,17 +14,14 @@ export default function AuthPage() {
 
   const handleSubmit = async () => {
     setError('');
-    if (!form.username || !form.password) { setError('Please fill all fields'); return; }
-    if (mode === 'register' && !form.email) { setError('Email is required'); return; }
+    if (!username.trim()) { setError('Please enter your name'); return; }
     setLoading(true);
     try {
-      const res = mode === 'login'
-        ? await authAPI.login({ username: form.username, password: form.password })
-        : await authAPI.register(form);
+      const res = await authAPI.setName({ name: username.trim() });
       login(res.data.player, res.data.token);
       navigate('/game');
     } catch (err) {
-      setError(err.response?.data?.error || 'Authentication failed');
+      setError(err.response?.data?.error || 'Failed to enter the Archive');
     }
     setLoading(false);
   };
@@ -45,15 +41,6 @@ export default function AuthPage() {
         </div>
 
         <div className="auth-card">
-          <div className="auth-tabs">
-            <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>
-              Enter
-            </button>
-            <button className={`auth-tab ${mode === 'register' ? 'active' : ''}`} onClick={() => { setMode('register'); setError(''); }}>
-              Become Archivist
-            </button>
-          </div>
-
           <div className="auth-form">
             <div className="auth-field">
               <label className="auth-label">Archivist Name</label>
@@ -61,38 +48,11 @@ export default function AuthPage() {
                 className="auth-input"
                 type="text"
                 placeholder="Your name in the Archive..."
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                value={username}
+                onChange={e => setUsername(e.target.value)}
                 onKeyDown={handleKey}
                 autoComplete="username"
-              />
-            </div>
-
-            {mode === 'register' && (
-              <div className="auth-field">
-                <label className="auth-label">Correspondence</label>
-                <input
-                  className="auth-input"
-                  type="email"
-                  placeholder="Your message address..."
-                  value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  onKeyDown={handleKey}
-                  autoComplete="email"
-                />
-              </div>
-            )}
-
-            <div className="auth-field">
-              <label className="auth-label">Cipher</label>
-              <input
-                className="auth-input"
-                type="password"
-                placeholder="Your secret word..."
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                onKeyDown={handleKey}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                autoFocus
               />
             </div>
 
@@ -103,7 +63,7 @@ export default function AuthPage() {
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? '...' : mode === 'login' ? 'Open the Archive' : 'Claim Your Title'}
+              {loading ? '...' : 'Enter the Archive'}
             </button>
           </div>
         </div>

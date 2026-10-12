@@ -7,8 +7,6 @@ import PlayerHUD from './PlayerHUD';
 import './GameScreen.css';
 
 function parseNarrative(text) {
-  // Bold: **text**
-  // Italic with gold: *text*
   const parts = [];
   let remaining = text;
   const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
@@ -64,21 +62,22 @@ export default function GameScreen() {
   const [notification, setNotification] = useState(null);
   const [localPlayer, setLocalPlayer] = useState(player);
   const [showReset, setShowReset] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [leaderboard, setLeaderboard] = useState([]);
   const narrativeRef = useRef(null);
 
+  const playerId = player?.id;
+
   useEffect(() => {
-    loadScene();
-  }, []);
+    if (playerId) loadScene();
+  }, [playerId]);
 
   const loadScene = async () => {
+    if (!playerId) return;
     setLoading(true);
     setNarrativeDone(false);
     try {
       const [sceneRes, playerRes] = await Promise.all([
-        gameAPI.getScene(),
-        gameAPI.getPlayer(),
+        gameAPI.getScene(playerId),
+        gameAPI.getPlayer(playerId),
       ]);
       setScene(sceneRes.data);
       setLocalPlayer(playerRes.data);
@@ -90,11 +89,11 @@ export default function GameScreen() {
   };
 
   const makeChoice = async (choiceId) => {
-    if (choosing || !narrativeDone) return;
+    if (choosing || !narrativeDone || !playerId) return;
     setChoosing(true);
     setNarrativeDone(false);
     try {
-      const res = await gameAPI.makeChoice(choiceId);
+      const res = await gameAPI.makeChoice(playerId, choiceId);
       const { scene: newScene, player: updatedPlayer, scoreEarned } = res.data;
 
       setScene(null);
@@ -126,23 +125,16 @@ export default function GameScreen() {
   };
 
   const resetGame = async () => {
+    if (!playerId) return;
     setShowReset(false);
     setLoading(true);
     try {
-      const res = await gameAPI.resetGame();
+      const res = await gameAPI.resetGame(playerId);
       setLocalPlayer(res.data);
       updatePlayer(res.data);
       await loadScene();
     } catch (err) { console.error(err); }
     setLoading(false);
-  };
-
-  const openLeaderboard = async () => {
-    try {
-      const res = await gameAPI.getLeaderboard();
-      setLeaderboard(res.data);
-      setShowLeaderboard(true);
-    } catch (err) { console.error(err); }
   };
 
   if (loading) {
@@ -171,7 +163,6 @@ export default function GameScreen() {
           {CHAPTER_SUBTITLES[scene?.chapter] || 'The Archive'}
         </div>
         <div className="game-topbar-actions">
-          <button className="topbar-btn" onClick={openLeaderboard}>⟡ Scores</button>
           <button className="topbar-btn" onClick={() => setShowReset(true)}>↺ Restart</button>
           <button className="topbar-btn danger" onClick={logout}>Exit</button>
         </div>
@@ -274,35 +265,6 @@ export default function GameScreen() {
               <button className="modal-btn confirm" onClick={resetGame}>Yes, restart</button>
               <button className="modal-btn cancel" onClick={() => setShowReset(false)}>Cancel</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Leaderboard modal */}
-      {showLeaderboard && (
-        <div className="modal-overlay" onClick={() => setShowLeaderboard(false)}>
-          <div className="modal leaderboard-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">The Archive's Champions</div>
-            {leaderboard.length === 0 ? (
-              <p className="modal-text">No scores yet. Be the first.</p>
-            ) : (
-              <table className="lb-table">
-                <thead>
-                  <tr><th>#</th><th>Archivist</th><th>Score</th><th>Chapter</th></tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((entry, i) => (
-                    <tr key={i} className={entry.username === player?.username ? 'lb-me' : ''}>
-                      <td>{i + 1}</td>
-                      <td>{entry.username}</td>
-                      <td>{entry.score}</td>
-                      <td>{entry.chapter}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            <button className="modal-btn cancel" onClick={() => setShowLeaderboard(false)}>Close</button>
           </div>
         </div>
       )}

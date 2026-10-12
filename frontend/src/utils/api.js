@@ -26,16 +26,14 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-  register: (data) => api.post('/api/auth/register', data),
-  login: (data) => api.post('/api/auth/login', data),
+  setName: (data) => api.post('/auth/name', data),
 };
 
 export const gameAPI = {
-  getScene: () => api.get('/api/game/scene'),
-  makeChoice: (choiceId) => api.post('/api/game/choose', { choiceId }),
-  resetGame: () => api.post('/api/game/reset'),
-  getPlayer: () => api.get('/api/game/player'),
-  getLeaderboard: () => api.get('/api/game/leaderboard'),
+  getScene: (playerId) => api.get('/scene', { params: { playerId } }),
+  makeChoice: (playerId, choiceId) => api.post('/choose', { playerId, choiceId }),
+  resetGame: (playerId) => api.post('/reset', null, { params: { playerId } }),
+  getPlayer: (playerId) => api.get('/player', { params: { playerId } }),
 };
 
 export default api;

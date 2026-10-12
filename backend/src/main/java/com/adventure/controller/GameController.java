@@ -14,7 +14,7 @@ public class GameController {
     private final GameService gameService;
 
     @GetMapping("/scene")
-    public ResponseEntity<?> getCurrentScene(@RequestParam(defaultValue "0") Long playerId) {
+    public ResponseEntity<?> getCurrentScene(@RequestParam String playerId) {
         try {
             return ResponseEntity.ok(gameService.getCurrentScene(playerId));
         } catch (Exception e) {
@@ -26,7 +26,7 @@ public class GameController {
     public ResponseEntity<?> makeChoice(@RequestBody Map<String, String> body) {
         try {
             return ResponseEntity.ok(gameService.makeChoice(
-                    body.getOrDefault("playerId", "0"),
+                    body.get("playerId"),
                     body.get("choiceId")
             ));
         } catch (IllegalArgumentException e) {
@@ -37,7 +37,7 @@ public class GameController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetGame(@RequestParam(defaultValue = "0") Long playerId) {
+    public ResponseEntity<?> resetGame(@RequestParam String playerId) {
         try {
             return ResponseEntity.ok(gameService.resetGame(playerId));
         } catch (Exception e) {
@@ -46,7 +46,7 @@ public class GameController {
     }
 
     @GetMapping("/player")
-    public ResponseEntity<?> getPlayerInfo(@RequestParam(defaultValue = "0") Long playerId) {
+    public ResponseEntity<?> getPlayerInfo(@RequestParam String playerId) {
         try {
             return ResponseEntity.ok(gameService.getPlayerInfo(playerId));
         } catch (Exception e) {
@@ -54,12 +54,5 @@ public class GameController {
         }
     }
 
-    @GetMapping("/leaderboard")
-    public ResponseEntity<?> getLeaderboard() {
-        try {
-            return ResponseEntity.ok(gameService.getLeaderboard());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-        }
-    }
+    // Leaderboard endpoint removed - no database persistence
 }

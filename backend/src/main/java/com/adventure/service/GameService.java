@@ -2,32 +2,32 @@ package com.adventure.service;
 
 import com.adventure.model.GameScene;
 import com.adventure.model.Player;
-import com.adventure.repository.PlayerRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class GameService {
 
-    private final PlayerRepository playerRepository;
     private final GameDataService gameDataService;
     private final ObjectMapper objectMapper;
+    
+    // In-memory player storage (no database)
+    private final Map<String, Player> playerStore = new ConcurrentHashMap<>();
 
-    public GameScene getCurrentScene(Long playerId) {
+    public GameScene getCurrentScene(String playerId) {
         Player player = getPlayer(playerId);
         GameScene scene = gameDataService.getScene(player.getCurrentSceneId());
         return filterChoicesForPlayer(scene, player);
     }
 
-    @Transactional
-    public Map<String, Object> makeChoice(Long playerId, String choiceId) {
+    public Map<String, Object> makeChoice(String playerId, String choiceId) {
         Player player = getPlayer(playerId);
         GameScene currentScene = gameDataService.getScene(player.getCurrentSceneId());
 
@@ -80,7 +80,7 @@ public class GameService {
         }
 
         player.setLastPlayed(LocalDateTime.now());
-        playerRepository.save(player);
+        playerStore.put(playerId, player);
 
         Map<String, Object> result = new HashMap<>();
         result.put("scene", filterChoicesForPlayer(nextScene, player));
@@ -89,8 +89,7 @@ public class GameService {
         return result;
     }
 
-    @Transactional
-    public Player resetGame(Long playerId) {
+    public Player resetGame(String playerId) {
         Player player = getPlayer(playerId);
         player.setCurrentSceneId("start");
         player.setCurrentChapter(1);
@@ -102,24 +101,11 @@ public class GameService {
         player.setChoicesMade(0);
         player.setGameFlags("{}");
         player.setLastPlayed(LocalDateTime.now());
-        return playerRepository.save(player);
+        playerStore.put(playerId, player);
+        return player;
     }
 
-    public List<Map<String, Object>> getLeaderboard() {
-        return playerRepository.findAll().stream()
-                .sorted((a, b) -> b.getTotalScore().compareTo(a.getTotalScore()))
-                .limit(10)
-                .map(p -> {
-                    Map<String, Object> entry = new HashMap<>();
-                    entry.put("username", p.getUsername());
-                    entry.put("score", p.getTotalScore());
-                    entry.put("chapter", p.getCurrentChapter());
-                    entry.put("completedScenes", p.getCompletedScenes().size());
-                    entry.put("achievements", p.getAchievements().size());
-                    return entry;
-                })
-                .toList();
-    }
+    // Leaderboard removed - no database persistence
 
     private GameScene filterChoicesForPlayer(GameScene scene, Player player) {
         if (scene == null) return null;
@@ -168,8 +154,15 @@ public class GameService {
         }
     }
 
-    private Player getPlayer(Long playerId) {
-        return playerRepository.findById(playerId)
-                .orElseThrow(() -> new RuntimeException("Player not found: " + playerId));
+    public Player getPlayerInfo(String playerId) {
+        return getPlayer(playerId);
+    }
+
+    private Player getPlayer(String playerId) {
+        return playerStore.computeIfAbsent(playerId, id -> {
+            Player newPlayer = new Player();
+            newPlayer.setName("Player");
+            return newPlayer;
+        });
     }
 }
