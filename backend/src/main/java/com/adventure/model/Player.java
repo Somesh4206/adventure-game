@@ -33,4 +33,5 @@ public class Player {
 
     private String gameFlags = "{}";
 
+    private java.time.LocalDateTime lastPlayed;
 }
