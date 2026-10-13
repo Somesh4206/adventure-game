@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=build /app/target/adventure-game-1.0.0.jar app.jar
 
 # Expose port
-EXPOSE 8080
+EXPOSE 10000
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the application (PORT will be passed as environment variable by Render)
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-10000} -jar app.jar"]
