@@ -5,7 +5,7 @@ A full-stack text adventure game with a Java Spring Boot backend and React front
 ---
 
 Check the Frontend at : 
-https://adventure-game-frontend-rujv.onrender.com
+https://text-adventuregame.vercel.app/game
 
 ## 🎮 About the Game
 
